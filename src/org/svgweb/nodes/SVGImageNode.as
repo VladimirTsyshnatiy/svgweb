@@ -135,17 +135,18 @@ package org.svgweb.nodes
             this.imageWidth = bitmapData.width;
             this.imageHeight = bitmapData.height;
 
-            clipRect = this.getClipRect();
-            if (clipRect) {
-                this.bitmapData = new BitmapData( clipRect.width, clipRect.height, true, 0x00000000 );
-                this.bitmapData.copyPixels(bitmapData, clipRect, new Point(0,0));
-                bitmap = new Bitmap( this.bitmapData );
-                bitmap.x = clipRect.left;
-                bitmap.y = clipRect.top;
-            }
-            else {
+			// If clipping mask changes coords relative to image optimization doesn't work			
+//            clipRect = this.getClipRect();
+//            if (clipRect) {
+//                this.bitmapData = new BitmapData( clipRect.width, clipRect.height, true, 0x00000000 );
+//                this.bitmapData.copyPixels(bitmapData, clipRect, new Point(0,0));
+//                bitmap = new Bitmap( this.bitmapData );
+//                bitmap.x = clipRect.left;
+//                bitmap.y = clipRect.top;
+//            }
+//            else {
                 bitmap = new Bitmap( bitmapData );
-            }
+//            }
             this.bitmapData = null;
             bitmap.opaqueBackground = null;
             bitmap.smoothing = true;
@@ -160,42 +161,43 @@ package org.svgweb.nodes
             this.finishDrawNode();
         }
 
-        // This is used for an optimization when there is a rectangular clipping area.
-        // The rectangle is relative to the image.
-        protected function getClipRect():Rectangle {
-            var attr:String;
-            var match:Array;
-            var node:SVGNode;
-
-            attr = this.getStyleOrAttr('mask');
-            if (!attr) {
-                attr = this.getAttribute('clip-path');
-            }
-            if (attr) {
-                match = attr.match(/url\(\s*#(.*?)\s*\)/si);
-                if (match.length == 2) {
-                    attr = match[1];
-                    node = this.svgRoot.getNode(attr);
-                    // One simple clipping shape?
-                    if (node && node.svgChildren.length == 1) {
-                        // Is it a rectangle?
-                        if (node.svgChildren[0] is SVGRectNode) {
-                            var clip:SVGRectNode=SVGRectNode(node.svgChildren[0]);
-                            // Subtract the current position from the clip to get the
-                            // image position
-                            return new Rectangle(SVGUnits.parseNumPct(clip.getStyleOrAttr('x'), this.getWidth())
-                                                   - SVGUnits.parseNumPct(this.getStyleOrAttr('x'), this.getWidth()),
-                                                 SVGUnits.parseNumPct(clip.getStyleOrAttr('y'), this.getHeight())
-                                                   - SVGUnits.parseNumPct(this.getStyleOrAttr('y'), this.getHeight()),
-                                                 SVGUnits.parseNumPct(clip.getStyleOrAttr('width'), this.getWidth()),
-                                                 SVGUnits.parseNumPct(clip.getStyleOrAttr('height'), this.getHeight()));
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
+		// If clipping mask changes coords relative to image optimization doesn't work			
+//        // This is used for an optimization when there is a rectangular clipping area.
+//        // The rectangle is relative to the image.
+//        protected function getClipRect():Rectangle {
+//            var attr:String;
+//            var match:Array;
+//            var node:SVGNode;
+//
+//            attr = this.getStyleOrAttr('mask');
+//            if (!attr) {
+//                attr = this.getAttribute('clip-path');
+//            }
+//            if (attr) {
+//                match = attr.match(/url\(\s*#(.*?)\s*\)/si);
+//                if (match.length == 2) {
+//                    attr = match[1];
+//                    node = this.svgRoot.getNode(attr);
+//                    // One simple clipping shape?
+//                    if (node && node.svgChildren.length == 1) {
+//                        // Is it a rectangle?
+//                        if (node.svgChildren[0] is SVGRectNode) {
+//                            var clip:SVGRectNode=SVGRectNode(node.svgChildren[0]);
+//                            // Subtract the current position from the clip to get the
+//                            // image position
+//                            return new Rectangle(SVGUnits.parseNumPct(clip.getStyleOrAttr('x'), this.getWidth())
+//                                                   - SVGUnits.parseNumPct(this.getStyleOrAttr('x'), this.getWidth()),
+//                                                 SVGUnits.parseNumPct(clip.getStyleOrAttr('y'), this.getHeight())
+//                                                   - SVGUnits.parseNumPct(this.getStyleOrAttr('y'), this.getHeight()),
+//                                                 SVGUnits.parseNumPct(clip.getStyleOrAttr('width'), this.getWidth()),
+//                                                 SVGUnits.parseNumPct(clip.getStyleOrAttr('height'), this.getHeight()));
+//                        }
+//                    }
+//                }
+//            }
+//
+//            return null;
+//        }
 
         public function onImageError():void {
             if (!this._initialRenderDone && topSprite.parent) {
