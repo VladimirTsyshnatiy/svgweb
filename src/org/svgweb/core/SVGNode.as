@@ -170,15 +170,18 @@ package org.svgweb.core
             // filter is applied to the child.
             // FIXME: Currently x and y are on the drawSprite. Try to move
             // to transform sprite.
-            if ( getStyleOrAttr('clip-path') != null
-                       || getAttribute('x') != null
-                       || getAttribute('y') != null ) {
+            // if no clip, no x and no y clipping mask equal to drawSprite and equal to topSprite. So when dynamicly
+            // set position of image we would get image on the right place, and mask shifted to x,y relative to image 
+            // as the result no image shown
+//            if ( getStyleOrAttr('clip-path') != null
+//                       || getAttribute('x') != null
+//                       || getAttribute('y') != null) {
                 drawSprite = new SVGSprite(this);
                 clipSprite.addChild(drawSprite);
-            }
-            else {
-                drawSprite = clipSprite;
-            }
+//            }
+//            else {
+//                drawSprite = clipSprite;
+//            }
 
             // If the object has a viewBox, the resulting transform should only apply to the
             // children of the object, so create a child sprite to hold the transform.
