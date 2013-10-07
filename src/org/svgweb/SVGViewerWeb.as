@@ -253,6 +253,7 @@ package org.svgweb
                 ExternalInterface.addCallback("jsRemoveAttribute", js_removeAttribute);
                 ExternalInterface.addCallback("jsBeginElementAt", js_beginElementAt);
                 ExternalInterface.addCallback("jsEndElementAt", js_endElementAt);
+                ExternalInterface.addCallback("jsUpdateStyle", js_updateStyle);
             }
             catch(error:SecurityError) {
                 var debugstr:String = "Security Error on ExternalInterface.addCallback(...). ";
@@ -1030,6 +1031,11 @@ package org.svgweb
                 SVGTimedNode(element).endElementAt(offset);
             }
         }
+
+		public function js_updateStyle(msg:String):void {
+			var args:Array = msg.split(DELIMITER);
+			this.svgRoot.updateStyles(args[0]);
+		}
 
         override public function addActionListener(eventType:String, target:EventDispatcher):void {
             if (!target.hasEventListener(eventType)) {

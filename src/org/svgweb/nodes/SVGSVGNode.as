@@ -18,8 +18,12 @@
  limitations under the License.
 */
 
-package org.svgweb.nodes
-{
+package org.svgweb.nodes {
+	import flash.external.ExternalInterface;
+    import flash.trace.Trace;
+    import org.svgweb.css.CssClass;
+    import org.svgweb.utils.ObjectUtils;
+    import org.svgweb.utils.StringUtils;
     import org.svgweb.core.SVGNode;
     import org.svgweb.core.SVGViewer;
     import org.svgweb.events.SVGEvent;
@@ -54,6 +58,15 @@ package org.svgweb.nodes
         private var lastFrameTime:uint = getTimer();
         private var totalFrameTime:uint = 0;
         private var frameCount:uint = 0;
+		
+		/** 
+		 * Css classes fields
+		 */
+		private var _cssClasses:Array = new Array();
+		private var _cssClassesByTag:Object = new Object();
+		private var _cssClassesByClass:Object = new Object();
+		private var _cssClassesById:Object = new Object();
+		
         
         /** If this file was loaded from a URL, such as samples/scimitar.svg,
             then objectURL points to the relative path from which it was
@@ -628,5 +641,106 @@ package org.svgweb.nodes
                 SVGViewer(topSprite.parent).increment(subject, amount);
             }
         }
+		
+		
+		private function updateClasses():void {
+			_cssClassesByClass = new Object();
+			_cssClassesById = new Object();
+			_cssClassesByTag = new Object();
+
+			var keySelectorMask:RegExp = /([\#\.]{0,1})([\w\-]*)[\[\]:\w\(\).#]*$/i;
+		
+			for each(var cssClass:CssClass in _cssClasses) {
+				for each(var selector:String in cssClass.selector.split(',')) {
+					
+					var cachedKey:String = StringUtils.getMatchedSubMask(selector, keySelectorMask, 2);
+					var selectorType:String = StringUtils.getMatchedSubMask(selector, keySelectorMask, 1);
+					
+					var cacheIndex:Object;
+					switch (selectorType) {
+						case ".":
+							cacheIndex = _cssClassesByClass;
+							break;
+							
+						case "#":
+							cacheIndex = _cssClassesById;
+							break;
+							
+						default:
+							cacheIndex = _cssClassesByTag;
+							break;
+					}
+					
+					if (!cacheIndex.hasOwnProperty(cachedKey)) {
+						cacheIndex[cachedKey] = new Object();
+					}
+		
+					cacheIndex[cachedKey][selector] = new CssClass();
+					CssClass(cacheIndex[cachedKey][selector]).selector = selector;
+					CssClass(cacheIndex[cachedKey][selector]).style = cssClass.style;
+				}
+			}
+		}
+		
+		public function getClassByTag(tag:String):Object {
+			if (tag && _cssClassesByTag.hasOwnProperty(tag)) {
+				return _cssClassesByTag[tag];
+			}
+			
+			return new Object();
+		}
+		
+		public function getClassById(id:String):Object {
+			if (id && !StringUtils.beginsWith(id, "__") && _cssClassesById.hasOwnProperty(id)) {
+				return _cssClassesById[id];
+			}
+			
+			return new Object();
+		}
+
+		public function getClassByClass(cssClass:String):Object {
+			if (cssClass) {
+				var classes:Array = cssClass.split(' ');
+				var result:Object = new Object();
+				
+				for each(var iClass:String in classes) {
+					if (_cssClassesByClass.hasOwnProperty(iClass)) {
+						result = ObjectUtils.mergeProperties(result, _cssClassesByClass[iClass]);
+					}
+				}
+				
+				return result;
+			}
+
+			return new Object();
+		}
+		
+		public function getClassBy(tag:String, id:String, cssClass:String):Object {
+			var result:Object = new Object();
+			
+			result = ObjectUtils.mergeProperties(result, getClassById(id));
+			result = ObjectUtils.mergeProperties(result, getClassByTag(tag));
+			result = ObjectUtils.mergeProperties(result, getClassByClass(cssClass));
+			
+			return result;
+		}
+		
+		public function updateStyles(styles:String):void {
+			if (styles) {
+				_cssClasses = new Array();
+				for each(var cssToken:String in styles.match(/[\w\#\.\-\s,>+:]+{.*?}/isg)) {
+					var cssClass:CssClass = new CssClass();
+					cssClass.fromString(cssToken);
+					_cssClasses.push(cssClass);
+				}
+			}
+			else {
+				_cssClasses = new Array();
+			}				
+
+			updateClasses();
+			updateClassStyle();
+			updateChildrenClassStyles();
+		}
     }
 }

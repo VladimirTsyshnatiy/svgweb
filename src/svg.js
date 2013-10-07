@@ -665,6 +665,19 @@ function hitch(context, method) {
   return function() { return method.apply(context, (arguments.length) ? arguments : []); };
 }
 
+
+/**
+ * return all css classes as string
+ */
+function getAllCssClasses() {
+    var css = "";
+    for(var i = 0; i < document.styleSheets.length; i++) {
+    	css += document.styleSheets[i].cssText;
+    }
+    
+    return css;
+}
+
 /* 
   Internet Explorer's list of standard XHR PROGIDS. 
 */
@@ -766,6 +779,9 @@ extend(SVGWeb, {
   /** Used to lookup namespaces **/
   _allSVGNamespaces: [],
   
+  /** All root nodes **/
+  allSVGSVGNodes: [],
+  
   /** Adds an event listener to know when both the page, the internal SVG
       machinery, and any SVG SCRIPTS or OBJECTS are finished loading.
       
@@ -831,6 +847,13 @@ extend(SVGWeb, {
     } else if (this.renderer == NativeHandler) {
       return 'native';
     }
+  },
+  
+  updateCssStyleSheets: function() {
+	  var allStyles = getAllCssClasses();
+	  for(var i in this.allSVGSVGNodes) {
+		  this.allSVGSVGNodes[i].updateCssStyleSheets(allStyles);
+	  }
   },
   
   /** Appends a dynamically created SVG OBJECT or SVG root to the page.
@@ -9102,6 +9125,11 @@ extend(_SVGSVGElement, {
     /* throws SVGException */
   },
   
+  updateCssStyleSheets: function(s) {
+	this._handler.sendToFlash('jsUpdateStyle', 
+			  [ /* cssString */ s]);
+  },
+  
   // end of SVGLocatable
   
   /** Called when the Microsoft Behavior HTC file is loaded. */
@@ -9178,6 +9206,9 @@ extend(_SVGSVGElement, {
                                 /* objectHeight */ size.pixelsHeight,
                                 /* ignoreWhiteSpace */ true,
                                 /* svgString */ this._svgString ]);
+    this.updateCssStyleSheets(getAllCssClasses());
+    svgweb.allSVGSVGNodes.push(this);
+    
     //end('jsHandleLoad');
   },
   

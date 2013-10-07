@@ -20,6 +20,12 @@
 
 package org.svgweb.core
 {
+    import flash.external.ExternalInterface;
+    import org.svgweb.css.CssProcessor;
+    import mx.utils.StringUtil;
+    import org.svgweb.css.CssClass;
+    import org.svgweb.utils.StringUtils;
+    import org.svgweb.utils.ObjectUtils;
     import org.svgweb.core.SVGViewer;
     import org.svgweb.SVGViewerWeb;
     import org.svgweb.nodes.*;
@@ -45,7 +51,7 @@ package org.svgweb.core
     {
         public static const ATTRIBUTES_NOT_INHERITED:Array = ['id', 'x', 'y', 'width', 'height', 'rotate', 'transform', 
                                                 'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target',
-                                                'viewBox', 'preserveAspectRatio'];
+                                                'viewBox', 'preserveAspectRatio','class'];
         
         public static const INVALID_ATTR_NONE:uint        = 0;
         public static const INVALID_ATTR_OPACITY:uint     = 1;
@@ -81,6 +87,8 @@ package org.svgweb.core
         protected var _id:String = null;
         protected var _graphicsCommands:Array;
         protected var _styles:Object;
+		protected var _computedStyles:Object;
+		protected var _computedClassStyles:Object;
 
         protected var original:SVGNode;
         protected var _isClone:Boolean = false;
@@ -91,6 +99,8 @@ package org.svgweb.core
         // cache the matrix to aid any zooming and panning operations
         // later
         protected var _lastVBMatrix:Matrix;
+		
+		protected var hover:Boolean;
         
         /**
          *
@@ -145,6 +155,11 @@ package org.svgweb.core
                 topSprite.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
                 topSprite.addEventListener(Event.REMOVED_FROM_STAGE, onRemovedFromStage);
             }
+			
+			if (drawSprite) {
+				drawSprite.addEventListener(MouseEvent.ROLL_OVER, onMouseOver);
+				drawSprite.addEventListener(MouseEvent.ROLL_OUT, onMouseOut);
+			}
             //increment('SVGNode_Constructor', new Date().getTime() - t);
         }
 
@@ -1477,8 +1492,10 @@ package org.svgweb.core
                 }
             }
            
-            if (applyStyle && _styles.hasOwnProperty(name)) {
-                return (_styles[name]);
+            if (applyStyle) {
+				if (_computedStyles && _computedStyles.hasOwnProperty(name)) {
+	                return (_computedStyles[name]);
+				}
             }
            
             var xmlList:XMLList = this._xml.attribute(name);
@@ -1648,7 +1665,15 @@ package org.svgweb.core
                     this.transformNode();
                     this.applyViewBox();
                     break;
-
+					
+                case 'class':
+					updateClassStyle();
+					break;
+					
+				case 'style':
+					updateComputedStyle();
+					break;
+				
                 case 'pointer-events':
                     if (value  == 'none') {
                         topSprite.mouseEnabled = false;
@@ -1822,7 +1847,50 @@ package org.svgweb.core
             
             this._xml.@style = newStyleString;
         }
-        
+		
+		/**
+		 * Compute element style by css rules
+		 */
+		public function updateClassStyle():void {
+			var processor:CssProcessor = CssProcessor.getInstance();
+			_computedClassStyles = processor.ComputeStyleFor(this);
+			updateComputedStyle();
+			this.invalidateDisplay();
+		}
+		
+		/**
+		 * Compute children element styles by css rules
+		 */
+		public function updateChildrenClassStyles():void {
+			for each(var child:SVGNode in this.svgChildren) {
+				child.updateClassStyle();
+				child.updateChildrenClassStyles();			
+			}
+		}
+		
+		/**
+		 * Compute overall element style
+		 */
+		private function updateComputedStyle():void {
+			_computedStyles = ObjectUtils.mergeProperties(_computedClassStyles, _styles);
+		}
+		
+		/**
+		 * Element id attribute
+		 */
+		public function getId():String {
+			return _id;
+		}
+		
+		
+		/**
+		 * Element tag name without namespace
+		 */
+		public function getTagName():String {
+			return _xml.localName();
+		}
+	
+		
         /**
          * Returns true if this node can have text children. Subclasses
          * should override this if they want to have text node children.
@@ -2180,7 +2248,7 @@ package org.svgweb.core
          * Called when a node is added to its parent.
          */
         protected function onAdded():void {
-            
+            updateClassStyle();
         }
 
         /**
@@ -2420,6 +2488,22 @@ package org.svgweb.core
         public function increment(subject:String, amount:int):void {
             this.svgRoot.increment(subject, amount);
         }
+		
+		protected function onMouseOver(e:MouseEvent):void {
+			hover = true;
+			updateClassStyle();
+			updateChildrenClassStyles();
+		}
+		
+		protected function onMouseOut(e:MouseEvent):void {
+			hover = false;
+			updateClassStyle();
+			updateChildrenClassStyles();
+		}
+		
+		public function isHover():Boolean {
+			return hover;
+		}
 
 /* For Performance Testing
         public function countTree():Array {
