@@ -81,6 +81,9 @@ package org.svgweb
         
         protected var objectWidth:Number;
         protected var objectHeight:Number;
+		
+		protected var lastEvent:Event;
+		protected var eventsCount:int = 0;
 
         // The delimiter we use when passing arguments between Flash and
         // JavaScript; performance testing showed this to be an important
@@ -104,6 +107,7 @@ package org.svgweb
             stage.addEventListener(KeyboardEvent.KEY_DOWN, handleAction);
             stage.addEventListener(KeyboardEvent.KEY_UP, handleAction);
             super();
+			this.lastEvent = null;
         }
 
         protected function onAddedToStage(event:Event = null):void {
@@ -1048,8 +1052,17 @@ package org.svgweb
                 target.removeEventListener(eventType, handleAction);
             } 
         }
+		
+		protected function getEventId(event:Event):int {
+			if (event == lastEvent) return eventsCount;
+			else {
+				lastEvent = event;
+				return ++eventsCount;
+			}
+		}
 
         protected function handleAction(event:Event):void {
+			var eventId:int = this.getEventId(event);
             switch(event.type) {
                 case SVGEvent.SVGLoad:
                     handleRootSVGLoad();
@@ -1060,11 +1073,11 @@ package org.svgweb
                 case MouseEvent.MOUSE_OUT:
                 case MouseEvent.MOUSE_OVER:
                 case MouseEvent.MOUSE_UP:
-                    js_sendMouseEvent(MouseEvent(event));
+                    js_sendMouseEvent(MouseEvent(event), eventId);
                     break;
                 case KeyboardEvent.KEY_DOWN:
                 case KeyboardEvent.KEY_UP:
-                    js_sendKeyboardEvent(KeyboardEvent(event));
+                    js_sendKeyboardEvent(KeyboardEvent(event), eventId);
                     break;
 
                 default:
@@ -1077,7 +1090,7 @@ package org.svgweb
             this.scaleY = (this.stage.stageHeight/this.objectHeight) * (this.objectHeight / this.getHeight());
         }
 
-        public function js_sendMouseEvent(event:MouseEvent):void {
+        public function js_sendMouseEvent(event:MouseEvent, eventId:int):void {
             if (   ( event.target is SVGSprite || event.target is TextField ) 
                 && ( event.currentTarget is SVGSprite ) ) {
                 if (event.target is SVGSprite ) {
@@ -1120,7 +1133,6 @@ package org.svgweb
                     rootMatrix.invert();
                     mousePoint = rootMatrix.transformPoint(mousePoint);
 
-
                     try {
                         ExternalInterface.call(this.js_handler + "onMessage",
                            this.msgToString(
@@ -1136,7 +1148,8 @@ package org.svgweb
                                      altKey: event.altKey,
                                      ctrlKey: event.ctrlKey,
                                      shiftKey: event.shiftKey,
-                                     scriptCode: scriptCode
+                                     scriptCode: scriptCode,
+									 id: eventId
                                    } 
                             )
                         );
@@ -1147,7 +1160,7 @@ package org.svgweb
             }
         }
 
-        public function js_sendKeyboardEvent(event:KeyboardEvent):void {
+        public function js_sendKeyboardEvent(event:KeyboardEvent, eventId:int):void {
             var scriptCode:String;
 
             switch(event.type) {
@@ -1171,7 +1184,8 @@ package org.svgweb
                              altKey: event.altKey,
                              ctrlKey: event.ctrlKey,
                              shiftKey: event.shiftKey,
-                             scriptCode: scriptCode
+                             scriptCode: scriptCode,
+							 id: eventId
                            } 
                     )
                 );
