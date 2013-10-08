@@ -1,4 +1,5 @@
 package org.svgweb.css {
+	import flash.external.ExternalInterface;
 	import org.svgweb.utils.StringUtils;
 	/**
 	 * @author v-dmbark

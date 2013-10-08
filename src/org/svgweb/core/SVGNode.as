@@ -18,8 +18,8 @@
  limitations under the License.
 */
 
-package org.svgweb.core
-{
+package org.svgweb.core {
+	import flash.ui.Mouse;
     import flash.external.ExternalInterface;
     import org.svgweb.css.CssProcessor;
     import mx.utils.StringUtil;
@@ -1493,6 +1493,10 @@ package org.svgweb.core
             }
            
             if (applyStyle) {
+				if (!_computedStyles) {
+					updateClassStyle();
+				}
+				
 				if (_computedStyles && _computedStyles.hasOwnProperty(name)) {
 	                return (_computedStyles[name]);
 				}
@@ -2494,16 +2498,36 @@ package org.svgweb.core
 			hover = true;
 			updateClassStyle();
 			updateChildrenClassStyles();
+			
+			setMouseCursor();
 		}
 		
 		protected function onMouseOut(e:MouseEvent):void {
 			hover = false;
 			updateClassStyle();
 			updateChildrenClassStyles();
+			Mouse.cursor = "auto";
 		}
 		
 		public function isHover():Boolean {
 			return hover;
+		}
+		
+		private function setMouseCursor():void {
+			switch (this.getStyleOrAttr("cursor")) {
+				case "pointer":
+					Mouse.cursor = "button";
+					break;
+				
+				case "default":
+					Mouse.cursor = "arrow";
+					break;
+					
+				case "move":
+					Mouse.cursor = "hand";
+					break;
+					
+			}
 		}
 
 /* For Performance Testing

@@ -26,7 +26,7 @@ package org.svgweb.css {
 		public function ComputeStyleFor(node:SVGNode):Object {
 			var classes:Array = getRelevantClasses(node);
 			var result:Object;
-			for each (var cssClass:Object in classes) {
+			for each (var cssClass:CssClass in classes) {
 				if (cssClass.hasOwnProperty("style")) {
 					result = ObjectUtils.mergeProperties(result, cssClass["style"]);
 				} 
