@@ -651,10 +651,13 @@ package org.svgweb
             if (element) {
                 if (eventType == 'click') {
                     element.topSprite.addEventListener(MouseEvent.CLICK, handleAction);
+                    element.topSprite.addEventListener(MouseEvent.RIGHT_CLICK, handleAction);
                 } else if (eventType == 'mouseup') {
                     element.topSprite.addEventListener(MouseEvent.MOUSE_UP, handleAction);
+                    element.topSprite.addEventListener(MouseEvent.RIGHT_MOUSE_UP, handleAction);
                 } else if (eventType == 'mousedown') {
                     element.topSprite.addEventListener(MouseEvent.MOUSE_DOWN, handleAction);
+                    element.topSprite.addEventListener(MouseEvent.RIGHT_MOUSE_DOWN, handleAction);
                 } else if (eventType == 'mousemove') {
                     element.topSprite.addEventListener(MouseEvent.MOUSE_MOVE, handleAction);
                 } else if (eventType == 'mouseover') {
@@ -1068,11 +1071,14 @@ package org.svgweb
                     handleRootSVGLoad();
                     break;
                 case MouseEvent.CLICK:
+                case MouseEvent.RIGHT_CLICK:
                 case MouseEvent.MOUSE_DOWN:
+                case MouseEvent.RIGHT_MOUSE_DOWN:
                 case MouseEvent.MOUSE_MOVE:
                 case MouseEvent.MOUSE_OUT:
                 case MouseEvent.MOUSE_OVER:
                 case MouseEvent.MOUSE_UP:
+                case MouseEvent.RIGHT_MOUSE_UP:
                     js_sendMouseEvent(MouseEvent(event), eventId);
                     break;
                 case KeyboardEvent.KEY_DOWN:
@@ -1102,15 +1108,18 @@ package org.svgweb
                 }
                 var currentTargetNode:SVGNode = SVGSprite(event.currentTarget).svgNode;
                 var scriptCode:String;
+                var rightButton:Boolean = event.type.toLowerCase().indexOf('right') != -1;
 
                 if ( (targetNode != null) &&
                      (currentTargetNode != null) ) { 
 
                     switch(event.type) {
                         case MouseEvent.CLICK:
+                        case MouseEvent.RIGHT_CLICK:
                             scriptCode = currentTargetNode.getAttribute('onclick');
                             break;
                         case MouseEvent.MOUSE_DOWN:
+                        case MouseEvent.RIGHT_MOUSE_DOWN:
                             scriptCode = currentTargetNode.getAttribute('onmousedown');
                             break;
                         case MouseEvent.MOUSE_MOVE:
@@ -1123,6 +1132,7 @@ package org.svgweb
                             scriptCode = currentTargetNode.getAttribute('onmouseover');
                             break;
                         case MouseEvent.MOUSE_UP:
+                        case MouseEvent.RIGHT_MOUSE_UP:
                             scriptCode = currentTargetNode.getAttribute('onmouseup');
                             break;
                     }
@@ -1140,7 +1150,7 @@ package org.svgweb
                                      uniqueId: this.js_uniqueId,
                                      targetGUID: targetNode.guid,
                                      currentTargetGUID: currentTargetNode.guid,
-                                     eventType: event.type.toLowerCase(),
+                                     eventType: event.type.toLowerCase().replace('right',''), // rightmousedown -> mousedown
                                      localX: event.localX,
                                      localY: event.localY,
                                      stageX: mousePoint.x,
@@ -1148,6 +1158,7 @@ package org.svgweb
                                      altKey: event.altKey,
                                      ctrlKey: event.ctrlKey,
                                      shiftKey: event.shiftKey,
+                                     button: rightButton ? 2 : 0,
                                      scriptCode: scriptCode,
 									 id: eventId
                                    } 
