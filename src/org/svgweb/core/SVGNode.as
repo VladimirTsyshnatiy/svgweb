@@ -1668,6 +1668,7 @@ package org.svgweb.core
 					
                 case 'class':
 					updateClassStyle();
+					updateChildrenClassStyles();
 					break;
 					
 				case 'style':
