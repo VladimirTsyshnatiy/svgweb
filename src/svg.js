@@ -2053,15 +2053,19 @@ extend(SVGWeb, {
           // fetch the root so that our 'this' context correctly
           // points to the root node inside of our onload function
           var root = document.getElementById(handler.id);
+          var eventObj = {
+              target : root,
+              preventDefault : function () {}
+          };
           if (isOpera) {
             // Opera 10.53 does not like this thread, probably because
             // it originated from flash. Strange problems occur, like the
             // thread just stops in various places. setTimeout seems to
             // set up a better thread. This is the same workaround as
             // in _SVGObject._executeScript().
-            setTimeout(function() { f.apply(root);f=null;root=null; }, 1);
+            setTimeout(function() { f.apply(root,[eventObj]);f=null;root=null;eventObj=null; }, 1);
           } else {
-            f.apply(root);
+            f.apply(root, [eventObj]);
           }
         } catch (exp) {
           console.log('Error while firing onload listener: ' 
@@ -2956,6 +2960,7 @@ FlashHandler._createElement = function(nodeName, forSVG) {
     @param forSVG Optional boolean on whether node will be attached to
     SVG sub-tree. Defaults to false. */
 FlashHandler._createTextNode = function(data, forSVG) {
+  // Blockly patch always create SVG nodes
   if (!forSVG) {
     return document._createTextNode(data);
   } else {
@@ -3308,13 +3313,14 @@ extend(FlashHandler, {
     // assuming the flash object is located at the browser origin,
     // which is what flash provides as node.transform.concatenatedMatrix.
     var self = this;
+    var parentElement = this.flash.parentNode;
     var evt = { target: target._getProxyNode(),
                 currentTarget: currentTarget._getProxyNode(),
                 type: msg.eventType,
-                clientX: Math.round(new Number(msg.stageX)),
-                clientY: Math.round(new Number(msg.stageY)),
-                screenX: Math.round(new Number(msg.stageX)),
-                screenY: Math.round(new Number(msg.stageY)),
+                clientX: Math.round(new Number(msg.stageX)) + ((parentElement) ? parentElement.offsetLeft : 0),
+                clientY: Math.round(new Number(msg.stageY)) + ((parentElement) ? parentElement.offsetTop : 0),
+                screenX: Math.round(new Number(msg.stageX)) - ((parentElement) ? parentElement.scrollLeft : 0),
+                screenY: Math.round(new Number(msg.stageY)) - ((parentElement) ? parentElement.scrollTop : 0),
                 altKey: msg.altKey,
                 ctrlKey: msg.ctrlKey,
                 shiftKey: msg.shiftKey,
@@ -5851,6 +5857,20 @@ extend(_Node, {
       this._htcNode._handler = this._handler;
       this._htcContainer.appendChild(this._htcNode);
     }
+    
+    this._htcNode.getComputedTextLength = function () {
+    	//@TODO uncomment when fix getBBox()
+    	//return this.getBBox().width;
+    	
+    	if (this._getNodeName() == "text") {
+    		var children = this._getChildNodes();
+    		if (children.length > 0) {
+        		var textChild = children[0];
+        		return textChild._getTextContent().length * 10;
+    		}
+    	}
+    };
+    
   },
     
   _setNodeValue: function(newValue) {
@@ -5879,15 +5899,15 @@ extend(_Node, {
       outside callers can pass in DOM nodes, etc. This function turns
       this into something we can work with, such as a _Node or _Element. */
   _getFakeNode: function(node) {
-    if (!node) {
+	if (!node) {
       node = this;
     }
-    
+
     // Was an HTC node passed in for IE? If so, get its _Node
     if (isIE && node._fakeNode) {
       node = node._fakeNode;
     }
-    
+	  
     return node;
   },
   
@@ -6011,7 +6031,7 @@ extend(_Node, {
       
       @returns The imported node. */
   _importNode: function(child, doAppend) {
-    //console.log('importNode, child='+child.nodeName+', doAppend='+doAppend);
+	//console.log('importNode, child='+child.nodeName+', doAppend='+doAppend);
     if (typeof doAppend == 'undefined') {
       doAppend = true;
     }
@@ -6568,7 +6588,9 @@ extend(_Element, {
         attrNode.nodeValue = attrValue;
         this._nodeXML.setAttributeNode(attrNode);
       } else if (isIE) {
-        this._nodeXML.setAttribute(qName, attrValue);
+    	if (qName.indexOf('xmlns') == -1) {
+            this._nodeXML.setAttribute(qName, attrValue);
+    	}
       } else {
         this._nodeXML.setAttributeNS(ns, qName, attrValue);
       }
